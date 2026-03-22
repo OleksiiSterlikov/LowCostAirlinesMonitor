@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Деталі моніторингу</h2>
+<p>{{ subscription.origin }} → {{ subscription.destination }}</p>
+<p>{{ subscription.date_from }} — {{ subscription.date_to }}</p>
+<p>Канал сповіщення: {{ subscription.notify_via }}</p>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Дата запису</th>
+        <th>Провайдер</th>
+        <th>Виліт</th>
+        <th>Повернення</th>
+        <th>Тариф</th>
+        <th>Ціна</th>
+    </tr>
+    {% for row in snapshots %}
+    <tr>
+        <td>{{ row.created_at }}</td>
+        <td>{{ row.provider.name }}</td>
+        <td>{{ row.outbound_date }}</td>
+        <td>{{ row.return_date }}</td>
+        <td>{{ row.fare_name }}</td>
+        <td>{{ row.price_amount }} {{ row.currency }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">Поки що немає результатів.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

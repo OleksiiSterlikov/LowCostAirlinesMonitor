@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Мої пошуки</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Додати моніторинг</button>
+</form>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Маршрут</th>
+        <th>Період</th>
+        <th>Канал</th>
+        <th>Статус</th>
+        <th>Дії</th>
+    </tr>
+    {% for item in subscriptions %}
+    <tr>
+        <td>{{ item.origin }} → {{ item.destination }}</td>
+        <td>{{ item.date_from }} — {{ item.date_to }}</td>
+        <td>{{ item.notify_via }}</td>
+        <td>{{ item.status }}</td>
+        <td>
+            <a href="{% url 'dashboard:subscription_detail' item.pk %}">Деталі</a>
+            {% if item.status == 'active' %}
+            | <a href="{% url 'dashboard:cancel_subscription' item.pk %}">Скасувати</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">Пошуків поки немає.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Low-Cost Monitor</title>
+</head>
+<body>
+    <header>
+        <h1>Low-Cost Ticket Monitor</h1>
+        {% if request.user.is_authenticated %}
+            <nav>
+                <a href="/">Кабінет</a> |
+                <a href="/accounts/profile/">Профіль</a> |
+                <a href="/accounts/password-change/">Змінити пароль</a> |
+                <a href="/accounts/logout/">Вихід</a>
+            </nav>
+        {% endif %}
+    </header>
+    {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+</body>
+</html>

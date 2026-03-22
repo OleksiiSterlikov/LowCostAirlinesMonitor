@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lowcost-ticket-monitor"
+version = "0.1.0"
+description = "Low-cost airline ticket price monitoring service"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "Django>=5.1,<5.3",
+  "mysqlclient>=2.2.4",
+  "celery[redis]>=5.4.0",
+  "redis>=5.0.8",
+  "django-environ>=0.11.2",
+  "django-celery-beat>=2.7.0",
+  "django-celery-results>=2.5.1",
+  "djangorestframework>=3.15.2",
+  "requests>=2.32.3",
+  "httpx>=0.28.1",
+  "tenacity>=9.0.0",
+  "python-telegram-bot>=22.0",
+  "gunicorn>=23.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.4",
+  "pytest-django>=4.9.0",
+  "factory-boy>=3.3.1",
+  "ruff>=0.8.6",
+  "mypy>=1.14.1",
+  "types-requests>=2.32.0.20241016",
+]
+
+[tool.setuptools]
+packages = ["src", "apps", "apps.accounts", "apps.core", "apps.providers", "apps.searches", "apps.notifications", "apps.dashboard"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "src.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
