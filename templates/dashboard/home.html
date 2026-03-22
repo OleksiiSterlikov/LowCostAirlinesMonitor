@@ -1,35 +1,120 @@
 {% extends "base.html" %}
+{% block title %}Кабінет | Low-Cost Monitor{% endblock %}
 {% block content %}
-<h2>Мої пошуки</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Додати моніторинг</button>
-</form>
+<section class="hero">
+    <div class="hero-copy">
+        <span class="eyebrow">Route Intelligence</span>
+        <h1>Керуйте підписками на тарифи як операційною панеллю, а не списком форм.</h1>
+        <p class="section-lead">
+            Додавай маршрути, відстежуй періоди та переглядай повну історію знайдених тарифів у єдиному кабінеті.
+        </p>
+    </div>
+    <div class="hero-aside">
+        <div class="stat-card">
+            <span class="muted">Активних підписок</span>
+            <strong>{{ subscriptions|length }}</strong>
+        </div>
+        <div class="stat-card">
+            <span class="muted">Базова валюта</span>
+            <strong>EUR</strong>
+        </div>
+    </div>
+</section>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Маршрут</th>
-        <th>Період</th>
-        <th>Канал</th>
-        <th>Статус</th>
-        <th>Дії</th>
-    </tr>
-    {% for item in subscriptions %}
-    <tr>
-        <td>{{ item.origin }} → {{ item.destination }}</td>
-        <td>{{ item.date_from }} — {{ item.date_to }}</td>
-        <td>{{ item.notify_via }}</td>
-        <td>{{ item.status }}</td>
-        <td>
-            <a href="{% url 'dashboard:subscription_detail' item.pk %}">Деталі</a>
-            {% if item.status == 'active' %}
-            | <a href="{% url 'dashboard:cancel_subscription' item.pk %}">Скасувати</a>
+<section class="grid-2">
+    <div class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Новий моніторинг</h2>
+                <p>Створи нову підписку для маршруту, дат і каналу сповіщення.</p>
+            </div>
+        </div>
+
+        <form method="post" class="form-grid">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <p class="form-help">Усі результати будуть зберігатися історично, навіть якщо ціна зросте або зникне.</p>
+            <div class="button-row">
+                <button type="submit" class="button">Додати моніторинг</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="stack">
+        <div class="metrics">
+            <article class="metric">
+                <span>Monitoring</span>
+                <strong>{{ subscriptions|length }}</strong>
+                <p>Усього підписок у кабінеті зараз.</p>
+            </article>
+            <article class="metric">
+                <span>Channels</span>
+                <strong>2</strong>
+                <p>Email і Telegram для подій зміни ціни.</p>
+            </article>
+            <article class="metric">
+                <span>Polling</span>
+                <strong>1h</strong>
+                <p>Плановий цикл опитування активних пошуків.</p>
+            </article>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Список підписок</h2>
+                    <p>Переходь у деталі кожної підписки для перегляду історії snapshot.</p>
+                </div>
+            </div>
+
+            {% if subscriptions %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Маршрут</th>
+                                <th>Період</th>
+                                <th>Канал</th>
+                                <th>Статус</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in subscriptions %}
+                                <tr>
+                                    <td>
+                                        <span class="route">
+                                            <span>{{ item.origin }}</span>
+                                            <span class="route-arrow">→</span>
+                                            <span>{{ item.destination }}</span>
+                                        </span>
+                                    </td>
+                                    <td>{{ item.date_from }} - {{ item.date_to }}</td>
+                                    <td>{{ item.notify_via }}</td>
+                                    <td>
+                                        <span class="badge {% if item.status == 'active' %}badge-active{% else %}badge-cancelled{% endif %}">
+                                            {{ item.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="inline-actions">
+                                            <a class="button-secondary" href="{% url 'dashboard:subscription_detail' item.pk %}">Деталі</a>
+                                            {% if item.status == 'active' %}
+                                                <a class="button-ghost" href="{% url 'dashboard:cancel_subscription' item.pk %}">Скасувати</a>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    Поки що немає активних підписок. Створи перший моніторинг у формі зліва.
+                </div>
             {% endif %}
-        </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5">Пошуків поки немає.</td></tr>
-    {% endfor %}
-</table>
+        </div>
+    </div>
+</section>
 {% endblock %}

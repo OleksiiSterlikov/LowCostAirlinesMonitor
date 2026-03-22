@@ -1,9 +1,34 @@
 {% extends "base.html" %}
+{% block title %}Запит на реєстрацію | Low-Cost Monitor{% endblock %}
 {% block content %}
-<h2>Запит на реєстрацію</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Надіслати</button>
-</form>
+<section class="auth-shell">
+    <div class="hero">
+        <div class="hero-copy">
+            <span class="eyebrow">Access Request</span>
+            <h1>Запроси доступ до панелі моніторингу маршрутів.</h1>
+            <p class="section-lead">
+                Після надсилання форми адміністратор перевірить запит і відкриє доступ до робочого кабінету.
+            </p>
+        </div>
+
+        <aside class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Реєстраційний запит</h2>
+                    <p>Вкажи контактні дані для створення облікового запису.</p>
+                </div>
+            </div>
+
+            <form method="post" class="form-grid">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <p class="form-help">Telegram ID можна залишити порожнім і додати пізніше в профілі.</p>
+                <div class="button-row">
+                    <button type="submit" class="button">Надіслати запит</button>
+                    <a href="/accounts/login/" class="button-ghost">Повернутися до входу</a>
+                </div>
+            </form>
+        </aside>
+    </div>
+</section>
 {% endblock %}

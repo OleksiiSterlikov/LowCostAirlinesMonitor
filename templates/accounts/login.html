@@ -1,10 +1,47 @@
 {% extends "base.html" %}
+{% block title %}Вхід | Low-Cost Monitor{% endblock %}
 {% block content %}
-<h2>Вхід</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Увійти</button>
-</form>
-<p><a href="/accounts/register/">Подати запит на реєстрацію</a></p>
+<section class="auth-shell">
+    <div class="hero">
+        <div class="hero-copy">
+            <span class="eyebrow">Flight Watch</span>
+            <h1>Моніторинг low-cost квитків без інформаційного шуму.</h1>
+            <p class="section-lead">
+                Контролюй маршрути, фіксуй кожну знайдену ціну та отримуй сповіщення в момент зміни тарифу.
+            </p>
+            <div class="kicker-grid">
+                <div class="kicker">
+                    <strong>Щогодинний polling</strong>
+                    <span class="muted">Регулярний моніторинг активних підписок.</span>
+                </div>
+                <div class="kicker">
+                    <strong>Повна історія</strong>
+                    <span class="muted">Зберігаються всі знайдені варіанти, а не тільки мінімум.</span>
+                </div>
+                <div class="kicker">
+                    <strong>Email / Telegram</strong>
+                    <span class="muted">Гнучкі канали сповіщення для кожного пошуку.</span>
+                </div>
+            </div>
+        </div>
+
+        <aside class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Вхід у систему</h2>
+                    <p>Використай логін або email та пароль.</p>
+                </div>
+            </div>
+
+            <form method="post" class="form-grid">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="button-row">
+                    <button type="submit" class="button">Увійти</button>
+                    <a href="/accounts/register/" class="button-ghost">Подати запит на доступ</a>
+                </div>
+            </form>
+        </aside>
+    </div>
+</section>
 {% endblock %}

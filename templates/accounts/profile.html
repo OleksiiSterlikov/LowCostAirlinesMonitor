@@ -1,9 +1,41 @@
 {% extends "base.html" %}
+{% block title %}Профіль | Low-Cost Monitor{% endblock %}
 {% block content %}
-<h2>Профіль</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Оновити</button>
-</form>
+<section class="hero">
+    <div class="hero-copy">
+        <span class="eyebrow">Profile Control</span>
+        <h1>Оновлюй контактні дані для точних сповіщень.</h1>
+        <p class="section-lead">
+            Тут керуються email, ім'я профілю та Telegram chat ID для нотифікацій.
+        </p>
+    </div>
+    <div class="hero-aside">
+        <div class="stat-card">
+            <span class="muted">Поточний користувач</span>
+            <strong>{{ request.user.username }}</strong>
+        </div>
+        <div class="stat-card">
+            <span class="muted">Стан доступу</span>
+            <strong>{% if request.user.is_approved %}Approved{% else %}Pending{% endif %}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Налаштування профілю</h2>
+            <p>Оновлені контакти будуть використані в сповіщеннях і службових повідомленнях.</p>
+        </div>
+    </div>
+
+    <form method="post" class="form-grid">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="button-row">
+            <button type="submit" class="button">Оновити профіль</button>
+            <a href="/" class="button-ghost">Назад до кабінету</a>
+        </div>
+    </form>
+</section>
 {% endblock %}

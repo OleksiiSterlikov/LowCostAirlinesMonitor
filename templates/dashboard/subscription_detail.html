@@ -1,30 +1,74 @@
 {% extends "base.html" %}
+{% block title %}Деталі підписки | Low-Cost Monitor{% endblock %}
 {% block content %}
-<h2>Деталі моніторингу</h2>
-<p>{{ subscription.origin }} → {{ subscription.destination }}</p>
-<p>{{ subscription.date_from }} — {{ subscription.date_to }}</p>
-<p>Канал сповіщення: {{ subscription.notify_via }}</p>
+<section class="hero">
+    <div class="hero-copy">
+        <span class="eyebrow">Subscription Detail</span>
+        <h1>
+            {{ subscription.origin }} → {{ subscription.destination }}
+        </h1>
+        <p class="section-lead">
+            Період моніторингу: {{ subscription.date_from }} - {{ subscription.date_to }}.
+            Канал сповіщення: {{ subscription.notify_via }}.
+        </p>
+    </div>
+    <div class="hero-aside">
+        <div class="stat-card">
+            <span class="muted">Статус</span>
+            <strong>{{ subscription.status }}</strong>
+        </div>
+        <div class="stat-card">
+            <span class="muted">Snapshot rows</span>
+            <strong>{{ snapshots|length }}</strong>
+        </div>
+    </div>
+</section>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Дата запису</th>
-        <th>Провайдер</th>
-        <th>Виліт</th>
-        <th>Повернення</th>
-        <th>Тариф</th>
-        <th>Ціна</th>
-    </tr>
-    {% for row in snapshots %}
-    <tr>
-        <td>{{ row.created_at }}</td>
-        <td>{{ row.provider.name }}</td>
-        <td>{{ row.outbound_date }}</td>
-        <td>{{ row.return_date }}</td>
-        <td>{{ row.fare_name }}</td>
-        <td>{{ row.price_amount }} {{ row.currency }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6">Поки що немає результатів.</td></tr>
-    {% endfor %}
-</table>
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Історія знайдених тарифів</h2>
+            <p>У таблиці відображені останні знайдені варіанти для цієї підписки.</p>
+        </div>
+        <div class="button-row">
+            <a href="/" class="button-ghost">До кабінету</a>
+            {% if subscription.status == 'active' %}
+                <a href="{% url 'dashboard:cancel_subscription' subscription.pk %}" class="button-secondary">Скасувати</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if snapshots %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Запис</th>
+                        <th>Провайдер</th>
+                        <th>Виліт</th>
+                        <th>Повернення</th>
+                        <th>Тариф</th>
+                        <th>Ціна</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in snapshots %}
+                        <tr>
+                            <td>{{ row.created_at }}</td>
+                            <td>{{ row.provider.name }}</td>
+                            <td>{{ row.outbound_date }}</td>
+                            <td>{{ row.return_date|default:"-" }}</td>
+                            <td>{{ row.fare_name }}</td>
+                            <td>{{ row.price_amount }} {{ row.currency }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            Поки що немає результатів. Після першого polling тут з'явиться історія snapshot.
+        </div>
+    {% endif %}
+</section>
 {% endblock %}

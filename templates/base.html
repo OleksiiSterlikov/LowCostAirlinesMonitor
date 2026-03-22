@@ -1,28 +1,56 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Low-Cost Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Low-Cost Monitor{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body>
-    <header>
-        <h1>Low-Cost Ticket Monitor</h1>
-        {% if request.user.is_authenticated %}
-            <nav>
-                <a href="/">Кабінет</a> |
-                <a href="/accounts/profile/">Профіль</a> |
-                <a href="/accounts/password-change/">Змінити пароль</a> |
-                <a href="/accounts/logout/">Вихід</a>
-            </nav>
+<body class="{% block body_class %}body-shell{% endblock %}">
+    <div class="page-aurora page-aurora-left"></div>
+    <div class="page-aurora page-aurora-right"></div>
+    <div class="page-grid"></div>
+
+    <div class="site-shell">
+        <header class="topbar">
+            <a class="brand" href="/">
+                <span class="brand-mark">LC</span>
+                <span class="brand-copy">
+                    <strong>Low-Cost Monitor</strong>
+                    <small>Ticket intelligence dashboard</small>
+                </span>
+            </a>
+
+            {% if request.user.is_authenticated %}
+                <nav class="topnav">
+                    <a href="/">Кабінет</a>
+                    <a href="/accounts/profile/">Профіль</a>
+                    <a href="/accounts/password-change/">Пароль</a>
+                    <a href="/accounts/logout/" class="topnav-ghost">Вихід</a>
+                </nav>
+            {% else %}
+                <nav class="topnav">
+                    <a href="/accounts/login/">Вхід</a>
+                    <a href="/accounts/register/" class="topnav-ghost">Запит на доступ</a>
+                </nav>
+            {% endif %}
+        </header>
+
+        {% if messages %}
+            <section class="message-stack">
+                {% for message in messages %}
+                    <div class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</div>
+                {% endfor %}
+            </section>
         {% endif %}
-    </header>
-    {% if messages %}
-        <ul>
-        {% for message in messages %}
-            <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    {% block content %}{% endblock %}
+
+        <main class="page-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 </body>
 </html>
