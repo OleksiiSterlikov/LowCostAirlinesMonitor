@@ -11,25 +11,8 @@
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="{% block body_class %}body-shell{% endblock %}">
-    <div class="site-shell">
-        <div class="app-window">
-            <header class="browser-bar">
-                <div class="browser-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <div class="browser-tab">
-                    <span class="browser-glyph">G</span>
-                    <span>Low-Cost Monitor</span>
-                </div>
-                <div class="browser-actions">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </header>
-
+    <header class="site-header">
+        <div class="header-inner">
             <div class="toolbar">
                 <a class="brand" href="/">
                     <span class="brand-word">LOWCOST</span>
@@ -56,7 +39,11 @@
                     <span></span>
                 </div>
             </div>
+        </div>
+    </header>
 
+    <div class="site-shell">
+        <div class="app-window">
             {% if messages %}
                 <section class="message-stack">
                     {% for message in messages %}
