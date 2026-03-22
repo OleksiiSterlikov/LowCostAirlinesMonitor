@@ -2,9 +2,13 @@
 
 ## Local setup
 ```bash
+python -m venv .venv
+.venv\Scripts\activate
 cp .env.example .env
 docker compose up --build
 ```
+
+Local web URL: `http://localhost:9000`
 
 ## Команди
 ```bash

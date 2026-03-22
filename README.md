@@ -22,13 +22,15 @@
 
 ## Швидкий старт
 ```bash
+python -m venv .venv
+.venv\Scripts\activate
 cp .env.example .env
 docker compose up --build
 ```
 
 Після запуску:
-- Django: http://localhost:8000
-- Admin: http://localhost:8000/admin
+- Django: http://localhost:9000
+- Admin: http://localhost:9000/admin
 
 ## Корисні команди
 ```bash
