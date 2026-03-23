@@ -1,18 +1,32 @@
+import logging
 from collections.abc import Iterable
+from datetime import timedelta
 from hashlib import sha256
 
 from django.db import transaction
 from django.utils import timezone
 
-from apps.notifications.services import NotificationDispatcher
+from apps.notifications.tasks import send_price_change_notification
 from apps.providers.adapters.base import FareOption, SearchQuery
 from apps.providers.services import get_active_providers, load_adapter
 
 from .models import FareSnapshot, PriceChangeEvent, SearchSubscription
 
+logger = logging.getLogger(__name__)
+
 
 class SearchPollingService:
     def run_subscription(self, subscription: SearchSubscription) -> int:
+        if subscription.status != "active":
+            return 0
+
+        if subscription.date_to < timezone.localdate():
+            subscription.status = "expired"
+            subscription.last_run_at = timezone.now()
+            subscription.next_run_at = None
+            subscription.save(update_fields=["status", "last_run_at", "next_run_at", "updated_at"])
+            return 0
+
         query = SearchQuery(
             origin=subscription.origin,
             destination=subscription.destination,
@@ -24,19 +38,35 @@ class SearchPollingService:
         )
         found = 0
         for provider in get_active_providers():
-            adapter = load_adapter(provider)
-            fares = adapter.search(query)
-            found += self._persist_results(subscription, provider, fares)
+            try:
+                adapter = load_adapter(provider)
+                fares = adapter.search(query)
+            except Exception:
+                logger.exception(
+                    "Provider polling failed for subscription=%s provider=%s",
+                    subscription.pk,
+                    provider.code,
+                )
+                continue
+
+            try:
+                found += self._persist_results(subscription, provider, fares)
+            except Exception:
+                logger.exception(
+                    "Persisting polling results failed for subscription=%s provider=%s",
+                    subscription.pk,
+                    provider.code,
+                )
+
         subscription.last_run_at = timezone.now()
-        if subscription.date_to < timezone.localdate():
-            subscription.status = "expired"
-        subscription.save(update_fields=["last_run_at", "status", "updated_at"])
+        subscription.next_run_at = timezone.now() + timedelta(hours=1)
+        subscription.save(update_fields=["last_run_at", "next_run_at", "status", "updated_at"])
         return found
 
     @transaction.atomic
     def _persist_results(self, subscription: SearchSubscription, provider, fares: Iterable[FareOption]) -> int:
         count = 0
-        dispatcher = NotificationDispatcher()
+        notification_event_ids: list[int] = []
         for fare in fares:
             payload = fare.raw_payload or {}
             content_hash = sha256(
@@ -77,6 +107,15 @@ class SearchPollingService:
                     is_initial_observation=latest is None,
                 )
                 if latest is not None:
-                    dispatcher.send_price_change(event)
+                    notification_event_ids.append(event.pk)
             count += 1
+
+        if notification_event_ids:
+            transaction.on_commit(
+                lambda event_ids=notification_event_ids: self._queue_price_change_notifications(event_ids)
+            )
         return count
+
+    def _queue_price_change_notifications(self, event_ids: list[int]) -> None:
+        for event_id in event_ids:
+            send_price_change_notification.delay(event_id)
