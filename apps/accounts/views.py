@@ -4,11 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
-from .forms import ForcedPasswordChangeForm, ProfileForm, RegistrationRequestForm
+from .forms import ForcedPasswordChangeForm, LoginForm, ProfileForm, RegistrationRequestForm
 
 
 class LoginView(auth_views.LoginView):
     template_name = "accounts/login.html"
+    form_class = LoginForm
 
 
 class LogoutView(auth_views.LogoutView):
