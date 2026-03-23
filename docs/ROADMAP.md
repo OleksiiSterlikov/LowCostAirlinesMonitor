@@ -1,18 +1,24 @@
 # ROADMAP.md
 
 ## Current state
-- The repository is a Django/Celery skeleton with the main bounded contexts already separated.
-- The core domain is outlined, but the documentation is still too thin for safe continuation without clarifying workflows and invariants.
-- The codebase includes stubs for provider adapters, notifications, and polling orchestration, but it is not yet a production-ready implementation.
+- The repository has moved beyond the initial skeleton stage and now has a stable foundation.
+- Core domain and architecture documentation have been expanded and aligned with the codebase.
+- Initial migrations, provider bootstrap, username-or-email login, admin approval workflow, and polling hardening are implemented.
+- The main remaining gap is real provider integration and operational hardening around production polling.
 
 ## Immediate next steps
-1. Clarify and expand domain documentation before changing the model.
-2. Add and verify Django migrations for the existing apps.
-3. Implement authentication by username or email.
-4. Implement the admin approval workflow and temporary-password onboarding flow.
-5. Strengthen polling orchestration, provider error isolation, and notification dispatch.
-6. Add service-level and integration tests for the critical workflows.
-7. Only after that, start implementing real provider adapters.
+1. Implement the first real provider adapter with proper mapping, throttling, and tests.
+2. Add structured logging and observability around polling, adapters, and notifications.
+3. Replace the static dashboard best-offers panel with data derived from persisted fare snapshots.
+4. Continue strengthening integration-level tests around polling tasks and notification dispatch.
+
+## Completed foundation
+- Expanded `docs/DATA_MODEL.md` and `docs/ARCHITECTURE.md`.
+- Added initial Django migrations.
+- Added username-or-email authentication.
+- Implemented admin approval and rejection workflow for registration requests.
+- Added bootstrap and synchronization for default airline providers.
+- Hardened polling orchestration with provider isolation and async notification dispatch.
 
 ## Documentation work first
 - Expand `docs/DATA_MODEL.md` with entity states, lifecycle transitions, and domain invariants.
@@ -48,3 +54,10 @@
 - Implement real adapters for Wizz Air and Ryanair with throttling and legal/ToS review.
 - Add observability, metrics, and better production hardening.
 - Add REST API or richer UI improvements after the core workflows are stable.
+
+## Next implementation block
+The next focused block should be:
+- one real provider adapter end-to-end
+- adapter/service tests for that provider
+- structured logging for polling and provider failures
+- best-offers dashboard data sourced from real `FareSnapshot` records
