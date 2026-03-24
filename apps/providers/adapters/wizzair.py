@@ -25,6 +25,11 @@ class WizzAirAdapter:
     provider_name = "Wizz Air"
     default_base_url = "https://be.wizzair.com/9.13.0/Api"
     default_site_base_url = "https://www.wizzair.com"
+    default_user_agent = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/123.0.0.0 Safari/537.36"
+    )
 
     def __init__(self, provider=None, client: httpx.Client | None = None) -> None:
         config = provider.config_json if provider is not None else {}
@@ -41,11 +46,7 @@ class WizzAirAdapter:
         self.client = client or httpx.Client(
             timeout=self.timeout,
             headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/123.0.0.0 Safari/537.36"
-                ),
+                "User-Agent": self.default_user_agent,
                 "Origin": "https://www.wizzair.com",
                 "Referer": f"{self.site_base_url}/{self.market}",
                 "Accept": "application/json, text/plain, */*",
@@ -132,11 +133,22 @@ class WizzAirAdapter:
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
 
+        user_agent = self.default_user_agent
+        client_headers = getattr(self.client, "headers", None)
+        if isinstance(client_headers, dict):
+            user_agent = client_headers.get("User-Agent", user_agent)
+        else:
+            try:
+                user_agent = client_headers["User-Agent"]
+            except Exception:
+                pass
+
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=self.playwright_headless)
             context = browser.new_context(
                 locale="en-GB",
-                user_agent=self.client.headers["User-Agent"],
+                user_agent=user_agent,
+                ignore_https_errors=True,
             )
             page = context.new_page()
             try:
