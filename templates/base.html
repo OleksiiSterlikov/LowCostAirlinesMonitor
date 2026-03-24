@@ -24,7 +24,10 @@
                         <a href="/">Кабінет</a>
                         <a href="/accounts/profile/">Профіль</a>
                         <a href="/accounts/password-change/">Пароль</a>
-                        <a href="/accounts/logout/">Вихід</a>
+                        <form method="post" action="/accounts/logout/" class="topnav-form">
+                            {% csrf_token %}
+                            <button type="submit" class="topnav-button">Вихід</button>
+                        </form>
                     </nav>
                 {% else %}
                     <nav class="topnav">

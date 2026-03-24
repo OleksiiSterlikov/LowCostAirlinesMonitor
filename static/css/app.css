@@ -89,6 +89,7 @@ textarea {
     justify-content: center;
     gap: 24px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .topnav a {
@@ -97,6 +98,24 @@ textarea {
 }
 
 .topnav a:hover {
+    color: #fff;
+}
+
+.topnav-form {
+    margin: 0;
+}
+
+.topnav-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.88);
+    cursor: pointer;
+}
+
+.topnav-button:hover {
     color: #fff;
 }
 
