@@ -24,23 +24,41 @@ class WizzAirAdapter:
     provider_code = "wizzair"
     provider_name = "Wizz Air"
     default_base_url = "https://be.wizzair.com/9.13.0/Api"
+    default_site_base_url = "https://www.wizzair.com"
 
     def __init__(self, provider=None, client: httpx.Client | None = None) -> None:
         config = provider.config_json if provider is not None else {}
         self.provider = provider
         self.base_url = config.get("base_url", self.default_base_url).rstrip("/")
+        self.site_base_url = config.get("site_base_url", self.default_site_base_url).rstrip("/")
+        self.market = config.get("market", "en-gb")
         self.timeout = config.get("timeout", 30.0)
+        self.bootstrap_enabled = config.get("bootstrap_enabled", True)
+        self.cookie_header = config.get("cookie_header", "")
         self.client = client or httpx.Client(
             timeout=self.timeout,
             headers={
-                "User-Agent": "Mozilla/5.0",
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/123.0.0.0 Safari/537.36"
+                ),
                 "Origin": "https://www.wizzair.com",
-                "Referer": "https://www.wizzair.com/",
+                "Referer": f"{self.site_base_url}/{self.market}",
                 "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "en-GB,en;q=0.9",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-site",
             },
         )
+        if self.cookie_header:
+            self.client.headers["Cookie"] = self.cookie_header
 
     def search(self, query: SearchQuery) -> list[FareOption]:
+        self._bootstrap_session(query)
         data = self._fetch_results(query)
         return self._map_response(data, query)
 
@@ -78,6 +96,26 @@ class WizzAirAdapter:
 
         response.raise_for_status()
         return response.json()
+
+    def _bootstrap_session(self, query: SearchQuery) -> None:
+        if not self.bootstrap_enabled:
+            return
+
+        homepage_url = f"{self.site_base_url}/{self.market}"
+        booking_url = self._build_deeplink(query, query.date_from)
+
+        for url in (homepage_url, booking_url):
+            response = self.client.get(
+                url,
+                headers={
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none" if url == homepage_url else "same-origin",
+                },
+                follow_redirects=True,
+            )
+            response.raise_for_status()
 
     def _map_response(self, data: dict[str, Any], query: SearchQuery) -> list[FareOption]:
         fares: list[FareOption] = []
@@ -155,7 +193,7 @@ class WizzAirAdapter:
 
     def _build_deeplink(self, query: SearchQuery, departure_date: date) -> str:
         return (
-            "https://www.wizzair.com/en-gb/booking/select-flight/"
+            f"{self.site_base_url}/{self.market}/booking/select-flight/"
             f"{query.origin}/{query.destination}/{departure_date.isoformat()}/null/"
             f"{query.passengers}/0/0/null"
         )

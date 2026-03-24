@@ -25,9 +25,12 @@ DEFAULT_PROVIDER_DEFINITIONS = (
         "website_url": "https://wizzair.com/",
         "config_json": {
             "base_url": "https://be.wizzair.com/9.13.0/Api",
+            "market": "en-gb",
             "timeout": 30.0,
             "cooldown_minutes": 30,
             "rate_limit_cooldown_minutes": 90,
+            "bootstrap_enabled": True,
+            "cookie_header": "",
             "fare_identity_keys": [
                 "flightNumber",
                 "departureDate",

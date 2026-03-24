@@ -238,6 +238,17 @@ def test_wizzair_rate_limit_sets_provider_cooldown(monkeypatch, db):
         notify_via="email",
     )
     provider = AirlineProvider.objects.get(code="wizzair")
+    provider.cooldown_until = None
+    provider.consecutive_failures = 0
+    provider.last_error_message = ""
+    provider.save(
+        update_fields=[
+            "cooldown_until",
+            "consecutive_failures",
+            "last_error_message",
+            "updated_at",
+        ]
+    )
 
     monkeypatch.setattr(
         "apps.searches.services.get_active_providers",
