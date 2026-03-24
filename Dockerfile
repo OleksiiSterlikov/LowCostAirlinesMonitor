@@ -22,3 +22,4 @@ ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt \
 
 COPY . /app
 RUN pip install --upgrade pip setuptools wheel && pip install -e .[dev]
+RUN python -m playwright install --with-deps chromium

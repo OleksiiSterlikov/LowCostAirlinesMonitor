@@ -35,6 +35,9 @@ class WizzAirAdapter:
         self.timeout = config.get("timeout", 30.0)
         self.bootstrap_enabled = config.get("bootstrap_enabled", True)
         self.cookie_header = config.get("cookie_header", "")
+        self.playwright_fallback_enabled = config.get("playwright_fallback_enabled", True)
+        self.playwright_headless = config.get("playwright_headless", True)
+        self.playwright_timeout_ms = config.get("playwright_timeout_ms", 45000)
         self.client = client or httpx.Client(
             timeout=self.timeout,
             headers={
@@ -59,7 +62,15 @@ class WizzAirAdapter:
 
     def search(self, query: SearchQuery) -> list[FareOption]:
         self._bootstrap_session(query)
-        data = self._fetch_results(query)
+        try:
+            data = self._fetch_results(query)
+        except WizzAirRateLimitError as exc:
+            if not self.playwright_fallback_enabled:
+                raise
+            try:
+                data = self._fetch_results_with_playwright(query)
+            except ModuleNotFoundError:
+                raise exc
         return self._map_response(data, query)
 
     @retry(
@@ -116,6 +127,92 @@ class WizzAirAdapter:
                 follow_redirects=True,
             )
             response.raise_for_status()
+
+    def _fetch_results_with_playwright(self, query: SearchQuery) -> dict[str, Any]:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=self.playwright_headless)
+            context = browser.new_context(
+                locale="en-GB",
+                user_agent=self.client.headers["User-Agent"],
+            )
+            page = context.new_page()
+            try:
+                page.set_default_timeout(self.playwright_timeout_ms)
+                page.goto(f"{self.site_base_url}/{self.market}", wait_until="domcontentloaded")
+                page.goto(self._build_deeplink(query, query.date_from), wait_until="domcontentloaded")
+
+                def _is_search_response(response):
+                    return (
+                        "/Api/search/search" in response.url
+                        and response.request.method.upper() == "POST"
+                    )
+
+                try:
+                    with page.expect_response(_is_search_response, timeout=self.playwright_timeout_ms) as response_info:
+                        page.reload(wait_until="domcontentloaded")
+                    response = response_info.value
+                    if response.status == 200:
+                        return response.json()
+                except PlaywrightTimeoutError:
+                    pass
+
+                payload = page.evaluate(
+                    """
+                    async ({ apiUrl, requestBody }) => {
+                        const response = await fetch(apiUrl, {
+                            method: "POST",
+                            headers: {
+                                "accept": "application/json, text/plain, */*",
+                                "content-type": "application/json;charset=UTF-8"
+                            },
+                            credentials: "include",
+                            body: JSON.stringify(requestBody),
+                        });
+                        const text = await response.text();
+                        return {
+                            status: response.status,
+                            body: text,
+                        };
+                    }
+                    """,
+                    {
+                        "apiUrl": f"{self.base_url}/search/search",
+                        "requestBody": {
+                            "flightList": [
+                                {
+                                    "departureStation": query.origin,
+                                    "arrivalStation": query.destination,
+                                    "departureDate": query.date_from.isoformat(),
+                                }
+                            ],
+                            "adultCount": query.passengers,
+                            "childCount": 0,
+                            "infantCount": 0,
+                            "wdc": False,
+                            "isFlightChange": False,
+                            "isSeniorOrStudent": False,
+                        },
+                    },
+                )
+                if payload["status"] == 429:
+                    raise WizzAirRateLimitError(
+                        "Wizz Air Playwright fallback was also rate-limited.",
+                        request=None,
+                        response=None,
+                    )
+                if payload["status"] >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"Wizz Air Playwright fallback failed with status {payload['status']}.",
+                        request=None,
+                        response=None,
+                    )
+                return httpx.Response(200, text=payload["body"]).json()
+            finally:
+                context.close()
+                browser.close()
 
     def _map_response(self, data: dict[str, Any], query: SearchQuery) -> list[FareOption]:
         fares: list[FareOption] = []

@@ -166,3 +166,41 @@ def test_wizzair_adapter_supports_manual_cookie_header(db):
     adapter = WizzAirAdapter(provider=provider, client=client)
 
     assert adapter.client.headers["Cookie"] == "ak_bmsc=test-cookie"
+
+
+def test_wizzair_adapter_uses_playwright_fallback_on_rate_limit(monkeypatch, db):
+    provider = AirlineProvider.objects.create(
+        code="wizzair-fallback",
+        name="Wizz Air Fallback",
+        adapter_path="apps.providers.adapters.wizzair.WizzAirAdapter",
+        config_json={"playwright_fallback_enabled": True, "bootstrap_enabled": False},
+    )
+    response = Mock(status_code=429, request=Mock())
+    response.raise_for_status = Mock()
+    client = Mock()
+    client.post.return_value = response
+    adapter = WizzAirAdapter(provider=provider, client=client)
+    fallback_mock = Mock(
+        return_value={
+            "outboundFlights": [
+                {
+                    "departureDateTime": "2026-05-15T06:10:00",
+                    "fares": [{"fareType": "BASIC", "amount": 33.99, "currencyCode": "EUR"}],
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(adapter, "_fetch_results_with_playwright", fallback_mock)
+
+    fares = adapter.search(
+        SearchQuery(
+            origin="BUD",
+            destination="FCO",
+            date_from=date(2026, 5, 1),
+            date_to=date(2026, 5, 31),
+        )
+    )
+
+    fallback_mock.assert_called_once()
+    assert len(fares) == 1
+    assert fares[0].amount == Decimal("33.99")

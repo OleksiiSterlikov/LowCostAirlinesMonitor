@@ -156,6 +156,7 @@ Required responsibilities of a real adapter:
 - apply rate limiting and throttling
 - handle retryable failures
 - log failures without leaking secrets
+- if needed, use provider-specific browser automation fallback behind the same adapter contract rather than leaking browser code into tasks or views
 
 ## Polling architecture
 

@@ -31,6 +31,9 @@ DEFAULT_PROVIDER_DEFINITIONS = (
             "rate_limit_cooldown_minutes": 90,
             "bootstrap_enabled": True,
             "cookie_header": "",
+            "playwright_fallback_enabled": True,
+            "playwright_headless": True,
+            "playwright_timeout_ms": 45000,
             "fare_identity_keys": [
                 "flightNumber",
                 "departureDate",
