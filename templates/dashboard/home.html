@@ -13,35 +13,37 @@
                         <h2>Найкращі пропозиції</h2>
                     </div>
                     <p>
-                        Три найкращі варіанти за ціною серед доступних напрямків і провайдерів.
-                        Надалі цей блок буде налаштовуватись під параметри конкретного користувача.
+                        Три найкращі варіанти за ціною серед уже збережених тарифів.
+                        Далі цей блок можна буде персоналізувати під маршрут користувача.
                     </p>
                 </div>
 
                 <div class="deal-list">
-                    <article class="deal-card deal-card-featured">
-                        <div class="deal-timeframe">Цей тиждень</div>
-                        <div class="deal-route">WAW → BCN</div>
-                        <div class="deal-provider">Ryanair</div>
-                        <div class="deal-price">€39.99</div>
-                        <div class="deal-meta">Виліт 27.03 · 1 пасажир · без багажу</div>
-                    </article>
-
-                    <article class="deal-card">
-                        <div class="deal-timeframe">Наступний тиждень</div>
-                        <div class="deal-route">BUD → FCO</div>
-                        <div class="deal-provider">Wizz Air</div>
-                        <div class="deal-price">€44.99</div>
-                        <div class="deal-meta">Виліт 02.04 · low fare · hand-picked</div>
-                    </article>
-
-                    <article class="deal-card">
-                        <div class="deal-timeframe">Наступний місяць</div>
-                        <div class="deal-route">VIE → ATH</div>
-                        <div class="deal-provider">Ryanair</div>
-                        <div class="deal-price">€58.49</div>
-                        <div class="deal-meta">Виліт 18.04 · 1 пасажир · basic fare</div>
-                    </article>
+                    {% for offer in best_offers %}
+                        <article class="deal-card {% if forloop.first %}deal-card-featured{% endif %}">
+                            <div class="deal-timeframe">{{ offer.title }}</div>
+                            {% if offer.snapshot %}
+                                <div class="deal-route">
+                                    {{ offer.snapshot.subscription.origin }} →
+                                    {{ offer.snapshot.subscription.destination }}
+                                </div>
+                                <div class="deal-provider">{{ offer.snapshot.provider.name }}</div>
+                                <div class="deal-price">€{{ offer.snapshot.price_amount }}</div>
+                                <div class="deal-meta">
+                                    Виліт {{ offer.snapshot.outbound_date|date:"d.m" }}
+                                    · {{ offer.snapshot.fare_name }}
+                                    · збережений тариф
+                                </div>
+                            {% else %}
+                                <div class="deal-route">Ще немає даних</div>
+                                <div class="deal-provider">Моніторинг накопичує snapshot-и</div>
+                                <div class="deal-price">—</div>
+                                <div class="deal-meta">
+                                    Діапазон {{ offer.date_from|date:"d.m" }} - {{ offer.date_to|date:"d.m" }}
+                                </div>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -88,7 +90,7 @@
                 </div>
                 <div class="feature-item">
                     <strong>Provider-based</strong>
-                    <span>Wizz Air і Ryanair як стартова архітектура.</span>
+                    <span>Wizz Air і Ryanair вже інтегровані як стартова архітектура.</span>
                 </div>
             </div>
         </div>

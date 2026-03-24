@@ -1,9 +1,9 @@
-DEFAULT_PROVIDER_DEFINITIONS = (
+from django.db import migrations
+
+
+DEFAULT_PROVIDER_UPDATES = (
     {
         "code": "ryanair",
-        "name": "Ryanair",
-        "adapter_path": "apps.providers.adapters.ryanair.RyanairAdapter",
-        "website_url": "https://www.ryanair.com/",
         "config_json": {
             "base_url": "https://www.ryanair.com/api/farfnd/v4",
             "market": "en-gb",
@@ -15,13 +15,9 @@ DEFAULT_PROVIDER_DEFINITIONS = (
                 "outbound.departureDate",
             ],
         },
-        "is_active": True,
     },
     {
         "code": "wizzair",
-        "name": "Wizz Air",
-        "adapter_path": "apps.providers.adapters.wizzair.WizzAirAdapter",
-        "website_url": "https://wizzair.com/",
         "config_json": {
             "base_url": "https://be.wizzair.com/9.13.0/Api",
             "timeout": 30.0,
@@ -31,6 +27,27 @@ DEFAULT_PROVIDER_DEFINITIONS = (
                 "departureDateTime",
             ],
         },
-        "is_active": True,
     },
 )
+
+
+def update_default_provider_configs(apps, schema_editor):
+    airline_provider = apps.get_model("providers", "AirlineProvider")
+    for provider_update in DEFAULT_PROVIDER_UPDATES:
+        airline_provider.objects.filter(code=provider_update["code"]).update(
+            config_json=provider_update["config_json"]
+        )
+
+
+def noop_reverse(apps, schema_editor):
+    pass
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("providers", "0002_seed_default_providers"),
+    ]
+
+    operations = [
+        migrations.RunPython(update_default_provider_configs, noop_reverse),
+    ]

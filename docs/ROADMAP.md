@@ -3,14 +3,15 @@
 ## Current state
 - The repository has moved beyond the initial skeleton stage and now has a stable foundation.
 - Core domain and architecture documentation have been expanded and aligned with the codebase.
-- Initial migrations, provider bootstrap, username-or-email login, admin approval workflow, and polling hardening are implemented.
-- The main remaining gap is real provider integration and operational hardening around production polling.
+- Initial migrations, provider bootstrap, username-or-email login, admin approval workflow, polling hardening, and real adapters for Ryanair and Wizz Air are implemented.
+- Structured logging, dashboard best-offers from persisted fare data, and stronger fare identity are now in place.
+- The main remaining gap is production-facing hardening around runtime observability, external adapter reliability, and user-facing workflow depth.
 
 ## Immediate next steps
-1. Implement the first real provider adapter with proper mapping, throttling, and tests.
-2. Add structured logging and observability around polling, adapters, and notifications.
-3. Replace the static dashboard best-offers panel with data derived from persisted fare snapshots.
-4. Continue strengthening integration-level tests around polling tasks and notification dispatch.
+1. Add richer observability beyond logs: failure counters, polling run metrics, and operational runbook notes.
+2. Strengthen provider-specific configuration for markets, throttling, and anti-bot boundaries without weakening the adapter abstraction.
+3. Continue strengthening integration-level tests around polling tasks, notification dispatch, and provider edge cases.
+4. Build the next user-visible layer: REST API or richer dashboard interactions around real fare data.
 
 ## Completed foundation
 - Expanded `docs/DATA_MODEL.md` and `docs/ARCHITECTURE.md`.
@@ -19,6 +20,10 @@
 - Implemented admin approval and rejection workflow for registration requests.
 - Added bootstrap and synchronization for default airline providers.
 - Hardened polling orchestration with provider isolation and async notification dispatch.
+- Implemented real provider adapters for Ryanair and Wizz Air.
+- Added structured logging for providers, polling, and notifications.
+- Replaced the static best-offers dashboard panel with offers derived from persisted `FareSnapshot` data.
+- Strengthened fare identity to use provider-specific keys from payloads and provider config.
 
 ## Documentation work first
 - Expand `docs/DATA_MODEL.md` with entity states, lifecycle transitions, and domain invariants.
@@ -57,7 +62,7 @@
 
 ## Next implementation block
 The next focused block should be:
-- one real provider adapter end-to-end
-- adapter/service tests for that provider
-- structured logging for polling and provider failures
-- best-offers dashboard data sourced from real `FareSnapshot` records
+- richer observability and operational diagnostics beyond plain logs
+- provider-specific config evolution and safer handling of anti-bot/runtime limits
+- deeper integration tests around polling, notifications, and adapter edge cases
+- REST API or HTMX/UI enhancements on top of the now-real fare data

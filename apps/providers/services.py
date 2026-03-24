@@ -1,13 +1,17 @@
+import logging
 from importlib import import_module
 
 from .bootstrap import DEFAULT_PROVIDER_DEFINITIONS
 from .models import AirlineProvider
+
+logger = logging.getLogger(__name__)
 
 
 def load_adapter(provider: AirlineProvider):
     module_path, class_name = provider.adapter_path.rsplit('.', 1)
     module = import_module(module_path)
     adapter_cls = getattr(module, class_name)
+    logger.info("Loading provider adapter provider=%s adapter=%s", provider.code, provider.adapter_path)
     try:
         return adapter_cls(provider=provider)
     except TypeError:
@@ -38,4 +42,9 @@ def sync_default_providers() -> tuple[int, int]:
         else:
             updated_count += 1
 
+    logger.info(
+        "Default provider sync completed created=%s updated=%s",
+        created_count,
+        updated_count,
+    )
     return created_count, updated_count

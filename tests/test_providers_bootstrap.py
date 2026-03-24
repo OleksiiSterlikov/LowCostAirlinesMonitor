@@ -31,6 +31,10 @@ def test_sync_default_providers_updates_existing_records(db):
     assert provider.name == "Ryanair"
     assert provider.is_active is True
     assert provider.adapter_path == "apps.providers.adapters.ryanair.RyanairAdapter"
+    assert provider.config_json["fare_identity_keys"] == [
+        "outbound.flightKey",
+        "outbound.departureDate",
+    ]
 
 
 def test_sync_airline_providers_management_command(db):

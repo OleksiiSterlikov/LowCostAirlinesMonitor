@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
+from .services import BestOfferService
 from apps.searches.forms import SearchSubscriptionForm
 from apps.searches.models import SearchSubscription
 
@@ -21,10 +22,12 @@ def home(request):
         form = SearchSubscriptionForm()
 
     subscriptions = SearchSubscription.objects.filter(user=request.user).order_by("-created_at")
+    best_offers = BestOfferService().get_dashboard_offers()
     return render(
         request,
         "dashboard/home.html",
         {
+            "best_offers": best_offers,
             "form": form,
             "subscriptions": subscriptions,
         },

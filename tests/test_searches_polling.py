@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from apps.providers.adapters.base import FareOption
 from apps.providers.models import AirlineProvider
 from apps.searches.models import PriceChangeEvent, SearchSubscription
-from apps.searches.services import SearchPollingService
+from apps.searches.services import SearchPollingService, build_fare_identity
 from apps.searches.tasks import poll_active_searches
 
 
@@ -159,3 +159,63 @@ def test_poll_active_searches_queues_only_active_subscriptions(monkeypatch, db):
 
     assert queued == 1
     delay_mock.assert_called_once_with(active_subscription.pk)
+
+
+def test_build_fare_identity_uses_provider_specific_keys(db):
+    user = get_user_model().objects.create_user(
+        username="identity-user",
+        email="identity@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="WAW",
+        destination="BCN",
+        date_from=date(2026, 3, 25),
+        date_to=date(2026, 3, 28),
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="ryanair")
+    matching_price_a = FareOption(
+        provider_code="ryanair",
+        provider_name="Ryanair",
+        origin="WAW",
+        destination="BCN",
+        outbound_date=date(2026, 3, 26),
+        return_date=None,
+        amount=Decimal("49.99"),
+        currency="EUR",
+        fare_name="basic",
+        raw_payload={"outbound": {"flightKey": "FR1234|2026-03-26"}},
+    )
+    matching_price_b = FareOption(
+        provider_code="ryanair",
+        provider_name="Ryanair",
+        origin="WAW",
+        destination="BCN",
+        outbound_date=date(2026, 3, 26),
+        return_date=None,
+        amount=Decimal("39.99"),
+        currency="EUR",
+        fare_name="basic",
+        raw_payload={"outbound": {"flightKey": "FR1234|2026-03-26"}},
+    )
+    different_flight = FareOption(
+        provider_code="ryanair",
+        provider_name="Ryanair",
+        origin="WAW",
+        destination="BCN",
+        outbound_date=date(2026, 3, 26),
+        return_date=None,
+        amount=Decimal("39.99"),
+        currency="EUR",
+        fare_name="basic",
+        raw_payload={"outbound": {"flightKey": "FR9999|2026-03-26"}},
+    )
+
+    identity_a = build_fare_identity(subscription, provider, matching_price_a)
+    identity_b = build_fare_identity(subscription, provider, matching_price_b)
+    identity_c = build_fare_identity(subscription, provider, different_flight)
+
+    assert identity_a == identity_b
+    assert identity_a != identity_c

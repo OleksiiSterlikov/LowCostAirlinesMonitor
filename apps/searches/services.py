@@ -2,6 +2,7 @@ import logging
 from collections.abc import Iterable
 from datetime import timedelta
 from hashlib import sha256
+from json import dumps
 
 from django.db import transaction
 from django.utils import timezone
@@ -13,6 +14,44 @@ from apps.providers.services import get_active_providers, load_adapter
 from .models import FareSnapshot, PriceChangeEvent, SearchSubscription
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_payload_value(payload: dict, path: str):
+    current = payload
+    for segment in path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(segment)
+        if current is None:
+            return None
+    return current
+
+
+def build_fare_identity(subscription: SearchSubscription, provider, fare: FareOption) -> str:
+    payload = fare.raw_payload or {}
+    provider_config = provider.config_json or {}
+    identity_keys = provider_config.get("fare_identity_keys", [])
+
+    identity_parts = [
+        provider.code,
+        subscription.origin,
+        subscription.destination,
+        fare.outbound_date.isoformat(),
+        fare.return_date.isoformat() if fare.return_date else "",
+        fare.fare_name,
+        fare.currency,
+    ]
+
+    for path in identity_keys:
+        value = _extract_payload_value(payload, path)
+        if value not in (None, ""):
+            identity_parts.append(f"{path}={value}")
+
+    if len(identity_parts) == 7:
+        identity_parts.append(f"deeplink={fare.deeplink}")
+        identity_parts.append(f"payload={dumps(payload, sort_keys=True, default=str)}")
+
+    return sha256("|".join(str(part) for part in identity_parts).encode()).hexdigest()
 
 
 class SearchPollingService:
@@ -41,6 +80,12 @@ class SearchPollingService:
             try:
                 adapter = load_adapter(provider)
                 fares = adapter.search(query)
+                logger.info(
+                    "Provider polling completed for subscription=%s provider=%s fare_count=%s",
+                    subscription.pk,
+                    provider.code,
+                    len(fares),
+                )
             except Exception:
                 logger.exception(
                     "Provider polling failed for subscription=%s provider=%s",
@@ -69,16 +114,12 @@ class SearchPollingService:
         notification_event_ids: list[int] = []
         for fare in fares:
             payload = fare.raw_payload or {}
-            content_hash = sha256(
-                f"{provider.id}|{fare.outbound_date}|{fare.return_date}|{fare.amount}|{fare.fare_name}".encode()
-            ).hexdigest()
+            content_hash = build_fare_identity(subscription, provider, fare)
             latest = (
                 FareSnapshot.objects.filter(
                     subscription=subscription,
                     provider=provider,
-                    outbound_date=fare.outbound_date,
-                    return_date=fare.return_date,
-                    fare_name=fare.fare_name,
+                    content_hash=content_hash,
                 )
                 .order_by("-created_at")
                 .first()
@@ -117,5 +158,6 @@ class SearchPollingService:
         return count
 
     def _queue_price_change_notifications(self, event_ids: list[int]) -> None:
+        logger.info("Queueing price change notifications event_count=%s", len(event_ids))
         for event_id in event_ids:
             send_price_change_notification.delay(event_id)
