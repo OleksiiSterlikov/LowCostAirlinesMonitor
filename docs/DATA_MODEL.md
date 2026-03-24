@@ -73,6 +73,22 @@ Rules:
 - `config_json` stores provider-specific settings, not secrets hardcoded in code.
 - Disabling a provider must stop polling that provider without deleting historical fare data.
 
+### Airport
+Represents a searchable airport catalog entry used for route normalization and UI suggestions.
+
+Key attributes:
+- `iata_code`
+- `city_name`
+- `airport_name`
+- `country_name`
+- `is_active`
+
+Rules:
+- `iata_code` must be unique and stored in uppercase.
+- A user-facing route input may begin as a city or airport name, but the persisted subscription must store the normalized IATA code.
+- The catalog is an operational reference dataset, not user-owned transactional data.
+- Autocomplete suggestions and name-to-code resolution must use only active airport records.
+
 ### SearchSubscription
 Represents a user-owned route and date-window to monitor until cancelled or expired.
 
@@ -102,6 +118,7 @@ Rules:
 - Only active subscriptions are polled.
 - `date_from` must be less than or equal to `date_to`.
 - Currency is currently expected to be `EUR`.
+- `origin` and `destination` must be stored as normalized IATA airport codes before provider polling.
 - A subscription expires when its date window is no longer relevant for polling.
 - A cancelled or expired subscription keeps its historical snapshots and events.
 
@@ -169,6 +186,7 @@ Fields:
 
 Rules:
 - Current scope is one passenger and no baggage.
+- `origin` and `destination` must already be normalized to provider-safe airport codes before adapter execution.
 - Provider-specific code must adapt from this normalized query instead of leaking provider parameters into views or models.
 
 ### FareOption
@@ -195,6 +213,7 @@ Rules:
 ## Relationships
 - `User` 1:N `SearchSubscription`
 - `User` 1:N `RegistrationRequest` as reviewer through `reviewed_by`
+- `Airport` is referenced logically by `SearchSubscription.origin` and `SearchSubscription.destination` through normalized IATA codes
 - `SearchSubscription` 1:N `FareSnapshot`
 - `SearchSubscription` 1:N `PriceChangeEvent`
 - `AirlineProvider` 1:N `FareSnapshot`
@@ -228,6 +247,7 @@ Decision:
 - Provider-specific scraping or API logic must stay behind the adapter abstraction.
 - Notifications must be driven by domain events, not by view logic.
 - Secrets and tokens must not be stored in code or fixtures.
+- User-entered route labels must be normalized against the airport catalog before polling.
 
 ## Planned model clarifications
 The following areas are intentionally left open and should be refined before implementation hardening:
@@ -235,4 +255,4 @@ The following areas are intentionally left open and should be refined before imp
 - whether `next_run_at` becomes a real scheduling field or is removed
 - whether `PriceChangeEvent` should reference the exact triggering snapshots
 - whether user approval needs separate activation timestamps and audit records
-- whether subscription validation should enforce IATA code normalization
+- how broad the airport catalog seed should be and whether it later syncs from an external open dataset

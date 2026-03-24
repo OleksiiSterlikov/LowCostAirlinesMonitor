@@ -21,12 +21,14 @@ Responsibilities:
 - profile management
 - dashboard screens
 - admin actions
+- airport autocomplete for route entry
 
 The web layer should stay thin. It accepts input, delegates to services, and renders responses.
 
 ### Domain and service layer
 Responsibilities:
 - validating domain workflows
+- normalizing user-entered route labels into airport codes
 - building normalized provider queries
 - persisting snapshots
 - detecting price changes
@@ -69,6 +71,12 @@ Scope:
 - provider configuration
 - normalized query/response contract
 
+### `airports`
+Scope:
+- airport catalog records
+- airport search and suggestion services
+- route label to IATA normalization
+
 ### `searches`
 Scope:
 - `SearchSubscription`
@@ -99,15 +107,16 @@ Scope:
 
 ### Subscription lifecycle flow
 1. An approved user creates a `SearchSubscription`.
-2. The subscription becomes `active`.
-3. Celery beat periodically schedules polling.
-4. A worker picks active subscriptions and executes the polling service.
-5. The polling service loads active providers and calls their adapters.
-6. Returned `FareOption` items are persisted as `FareSnapshot`.
-7. The service compares each observation against the previous observation of the same fare identity.
-8. When the price changes, the system creates `PriceChangeEvent`.
-9. Notification delivery is triggered for non-initial price changes.
-10. The subscription remains active until the user cancels it or the monitored period expires.
+2. The input route labels are normalized through the airport catalog into IATA codes.
+3. The subscription becomes `active`.
+4. Celery beat periodically schedules polling.
+5. A worker picks active subscriptions and executes the polling service.
+6. The polling service loads active providers and calls their adapters.
+7. Returned `FareOption` items are persisted as `FareSnapshot`.
+8. The service compares each observation against the previous observation of the same fare identity.
+9. When the price changes, the system creates `PriceChangeEvent`.
+10. Notification delivery is triggered for non-initial price changes.
+11. The subscription remains active until the user cancels it or the monitored period expires.
 
 ## Synchronous and asynchronous boundaries
 
@@ -115,6 +124,7 @@ Synchronous by default:
 - user-facing form submission
 - admin review submission
 - basic domain validation
+- airport lookup and route normalization
 - writing core transactional state
 
 Asynchronous by default:
@@ -206,12 +216,14 @@ Storage principles:
 - snapshots are append-only historical records
 - provider config is data-driven through `AirlineProvider`
 - raw payload is stored for traceability and mapping review
+- airport catalog data is stored locally to support deterministic normalization and autocomplete
 
 ## Extensibility rules
 - New providers are added as separate adapters under `apps/providers/adapters/`.
 - Provider configuration is stored in the database, not hardcoded in branching logic.
 - Domain services work with normalized contracts, not provider-specific DTOs.
 - UI code must not contain scraping or integration logic.
+- Route normalization logic must rely on the airport catalog service rather than ad-hoc string handling in views.
 
 ## Security and operational constraints
 - Secrets are loaded from environment variables.

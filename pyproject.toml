@@ -35,7 +35,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["src", "apps", "apps.accounts", "apps.core", "apps.providers", "apps.searches", "apps.notifications", "apps.dashboard"]
+packages = ["src", "apps", "apps.accounts", "apps.airports", "apps.core", "apps.providers", "apps.searches", "apps.notifications", "apps.dashboard"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "src.settings"

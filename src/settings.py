@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "apps.core",
     "apps.accounts",
+    "apps.airports",
     "apps.providers",
     "apps.searches",
     "apps.notifications",

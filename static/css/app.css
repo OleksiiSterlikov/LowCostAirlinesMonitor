@@ -365,6 +365,11 @@ textarea {
     color: var(--light-muted);
 }
 
+.form-error {
+    color: var(--accent);
+    font-size: 0.82rem;
+}
+
 .form-grid input,
 .form-grid select,
 .form-grid textarea {

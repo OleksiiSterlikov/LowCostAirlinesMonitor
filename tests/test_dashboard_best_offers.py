@@ -9,6 +9,7 @@ from apps.searches.models import FareSnapshot, SearchSubscription
 
 
 def test_best_offer_service_selects_lowest_price_per_window(db):
+    FareSnapshot.objects.all().delete()
     user = get_user_model().objects.create_user(
         username="dashboard-user",
         email="dashboard@example.com",
@@ -70,6 +71,7 @@ def test_best_offer_service_selects_lowest_price_per_window(db):
 
 
 def test_best_offer_service_returns_empty_window_when_no_snapshot_exists(db):
+    FareSnapshot.objects.all().delete()
     offers = BestOfferService().get_dashboard_offers(reference_date=date(2026, 3, 24))
 
     assert len(offers) == 3
