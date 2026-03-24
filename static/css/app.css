@@ -445,6 +445,32 @@ textarea {
     line-height: 1.45;
 }
 
+.provider-status-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.provider-status-card {
+    display: grid;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px solid var(--window-line);
+    border-radius: 16px;
+    background: #fcfcfc;
+}
+
+.provider-status-card strong {
+    font-size: 0.9rem;
+}
+
+.provider-status-card span {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
 .panel-list {
     margin-top: 10px;
     padding-top: 12px;
@@ -654,6 +680,7 @@ th {
     .metrics,
     .kicker-grid,
     .feature-grid,
+    .provider-status-strip,
     .toolbar {
         grid-template-columns: 1fr;
     }

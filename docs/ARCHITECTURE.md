@@ -190,6 +190,8 @@ Before scaling, the polling path should evolve toward:
 - One broken provider must not block polling for other providers.
 - Transient provider failures should be retried with backoff.
 - Permanent mapping or contract failures should be logged and surfaced for investigation.
+- Providers may enter a temporary cooldown window after repeated failures or explicit rate-limit responses.
+- Provider operational state should be visible in admin and user-facing diagnostics, not hidden behind an empty result set.
 
 ### Notification failures
 - Notification delivery should be retried independently from price detection.

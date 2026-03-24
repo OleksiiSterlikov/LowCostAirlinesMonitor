@@ -9,7 +9,14 @@ from django.utils import timezone
 
 from apps.notifications.tasks import send_price_change_notification
 from apps.providers.adapters.base import FareOption, SearchQuery
-from apps.providers.services import get_active_providers, load_adapter
+from apps.providers.adapters.wizzair import WizzAirRateLimitError
+from apps.providers.services import (
+    get_active_providers,
+    load_adapter,
+    mark_provider_failure,
+    mark_provider_success,
+    provider_is_in_cooldown,
+)
 
 from .models import FareSnapshot, PriceChangeEvent, SearchSubscription
 
@@ -77,20 +84,36 @@ class SearchPollingService:
         )
         found = 0
         for provider in get_active_providers():
+            if provider_is_in_cooldown(provider):
+                logger.info(
+                    "Skipping provider in cooldown subscription=%s provider=%s cooldown_until=%s",
+                    subscription.pk,
+                    provider.code,
+                    provider.cooldown_until,
+                )
+                continue
             try:
                 adapter = load_adapter(provider)
                 fares = adapter.search(query)
+                mark_provider_success(provider)
                 logger.info(
                     "Provider polling completed for subscription=%s provider=%s fare_count=%s",
                     subscription.pk,
                     provider.code,
                     len(fares),
                 )
-            except Exception:
+            except Exception as exc:
+                cooldown_minutes = self._get_provider_cooldown_minutes(provider, exc)
+                mark_provider_failure(
+                    provider,
+                    str(exc),
+                    cooldown_minutes=cooldown_minutes,
+                )
                 logger.exception(
-                    "Provider polling failed for subscription=%s provider=%s",
+                    "Provider polling failed for subscription=%s provider=%s cooldown_minutes=%s",
                     subscription.pk,
                     provider.code,
+                    cooldown_minutes,
                 )
                 continue
 
@@ -161,3 +184,9 @@ class SearchPollingService:
         logger.info("Queueing price change notifications event_count=%s", len(event_ids))
         for event_id in event_ids:
             send_price_change_notification.delay(event_id)
+
+    def _get_provider_cooldown_minutes(self, provider, exc: Exception) -> int | None:
+        config = provider.config_json or {}
+        if provider.code == "wizzair" and isinstance(exc, WizzAirRateLimitError):
+            return int(config.get("rate_limit_cooldown_minutes", 90))
+        return int(config.get("cooldown_minutes", 5))

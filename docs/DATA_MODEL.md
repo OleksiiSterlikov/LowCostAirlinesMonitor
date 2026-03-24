@@ -66,12 +66,19 @@ Key attributes:
 - `adapter_path`
 - `website_url`
 - `config_json`
+- `last_success_at`
+- `last_failure_at`
+- `last_error_message`
+- `consecutive_failures`
+- `cooldown_until`
 
 Rules:
 - `code` must be unique.
 - `adapter_path` must point to an implementation compatible with the provider adapter contract.
 - `config_json` stores provider-specific settings, not secrets hardcoded in code.
 - Disabling a provider must stop polling that provider without deleting historical fare data.
+- Provider runtime health is operational state and may change on each polling cycle.
+- `cooldown_until` temporarily suppresses polling for providers that are currently rate-limited or unstable.
 
 ### Airport
 Represents a searchable airport catalog entry used for route normalization and UI suggestions.

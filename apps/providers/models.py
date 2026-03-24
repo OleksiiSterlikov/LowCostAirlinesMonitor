@@ -13,6 +13,11 @@ class AirlineProvider(TimeStampedModel):
     )
     website_url = models.URLField(blank=True)
     config_json = models.JSONField(default=dict, blank=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+    last_failure_at = models.DateTimeField(null=True, blank=True)
+    last_error_message = models.CharField(max_length=500, blank=True)
+    consecutive_failures = models.PositiveIntegerField(default=0)
+    cooldown_until = models.DateTimeField(null=True, blank=True)
 
     def __str__(self) -> str:
         return self.name

@@ -122,6 +122,25 @@
                     <span>Wizz Air і Ryanair вже інтегровані як стартова архітектура.</span>
                 </div>
             </div>
+
+            {% if provider_statuses %}
+                <div class="provider-status-strip">
+                    {% for provider in provider_statuses %}
+                        <div class="provider-status-card">
+                            <strong>{{ provider.name }}</strong>
+                            {% if provider.cooldown_until %}
+                                <span>Cooldown до {{ provider.cooldown_until|date:"d.m H:i" }}</span>
+                            {% elif provider.last_error_message %}
+                                <span>{{ provider.last_error_message }}</span>
+                            {% elif provider.last_success_at %}
+                                <span>Останній успіх {{ provider.last_success_at|date:"d.m H:i" }}</span>
+                            {% else %}
+                                <span>Ще немає runtime-статусу</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </section>

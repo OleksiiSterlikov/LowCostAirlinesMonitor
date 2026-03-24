@@ -1,5 +1,8 @@
 import logging
 from importlib import import_module
+from datetime import timedelta
+
+from django.utils import timezone
 
 from .bootstrap import DEFAULT_PROVIDER_DEFINITIONS
 from .models import AirlineProvider
@@ -20,6 +23,52 @@ def load_adapter(provider: AirlineProvider):
 
 def get_active_providers() -> list[AirlineProvider]:
     return list(AirlineProvider.objects.filter(is_active=True).order_by('name'))
+
+
+def provider_is_in_cooldown(provider: AirlineProvider) -> bool:
+    return bool(provider.cooldown_until and provider.cooldown_until > timezone.now())
+
+
+def mark_provider_success(provider: AirlineProvider) -> None:
+    provider.last_success_at = timezone.now()
+    provider.last_error_message = ""
+    provider.consecutive_failures = 0
+    provider.cooldown_until = None
+    provider.save(
+        update_fields=[
+            "last_success_at",
+            "last_error_message",
+            "consecutive_failures",
+            "cooldown_until",
+            "updated_at",
+        ]
+    )
+
+
+def mark_provider_failure(
+    provider: AirlineProvider,
+    error_message: str,
+    *,
+    cooldown_minutes: int | None = None,
+) -> None:
+    provider.last_failure_at = timezone.now()
+    provider.last_error_message = error_message[:500]
+    provider.consecutive_failures += 1
+    if cooldown_minutes:
+        provider.cooldown_until = timezone.now() + timedelta(minutes=cooldown_minutes)
+    provider.save(
+        update_fields=[
+            "last_failure_at",
+            "last_error_message",
+            "consecutive_failures",
+            "cooldown_until",
+            "updated_at",
+        ]
+    )
+
+
+def get_provider_runtime_statuses() -> list[AirlineProvider]:
+    return list(AirlineProvider.objects.filter(is_active=True).order_by("name"))
 
 
 def sync_default_providers() -> tuple[int, int]:

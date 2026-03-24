@@ -10,6 +10,7 @@ DEFAULT_PROVIDER_DEFINITIONS = (
             "language": "en",
             "timeout": 30.0,
             "max_price": 1000,
+            "cooldown_minutes": 5,
             "fare_identity_keys": [
                 "outbound.flightKey",
                 "outbound.departureDate",
@@ -25,6 +26,8 @@ DEFAULT_PROVIDER_DEFINITIONS = (
         "config_json": {
             "base_url": "https://be.wizzair.com/9.13.0/Api",
             "timeout": 30.0,
+            "cooldown_minutes": 30,
+            "rate_limit_cooldown_minutes": 90,
             "fare_identity_keys": [
                 "flightNumber",
                 "departureDate",

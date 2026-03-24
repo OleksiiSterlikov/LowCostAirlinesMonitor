@@ -4,9 +4,7 @@
 <section class="hero">
     <div class="hero-copy">
         <span class="eyebrow">Subscription Detail</span>
-        <h1>
-            {{ subscription.origin }} → {{ subscription.destination }}
-        </h1>
+        <h1>{{ subscription.origin }} → {{ subscription.destination }}</h1>
         <p class="section-lead">
             Період моніторингу: {{ subscription.date_from }} - {{ subscription.date_to }}.
             Канал сповіщення: {{ subscription.notify_via }}.
@@ -21,6 +19,39 @@
             <span class="muted">Snapshot rows</span>
             <strong>{{ snapshots|length }}</strong>
         </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Стан провайдерів</h2>
+            <p>Тут видно, чому конкретний провайдер може не повертати результати прямо зараз.</p>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Провайдер</th>
+                    <th>Останній успіх</th>
+                    <th>Остання помилка</th>
+                    <th>Cooldown до</th>
+                    <th>Збої підряд</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for provider in provider_statuses %}
+                    <tr>
+                        <td>{{ provider.name }}</td>
+                        <td>{{ provider.last_success_at|default:"-" }}</td>
+                        <td>{{ provider.last_error_message|default:"-" }}</td>
+                        <td>{{ provider.cooldown_until|default:"-" }}</td>
+                        <td>{{ provider.consecutive_failures }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 

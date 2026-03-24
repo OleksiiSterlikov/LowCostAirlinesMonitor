@@ -1,11 +1,13 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.providers.adapters.base import FareOption
+from apps.providers.adapters.wizzair import WizzAirRateLimitError
 from apps.providers.models import AirlineProvider
 from apps.searches.models import PriceChangeEvent, SearchSubscription
 from apps.searches.services import SearchPollingService, build_fare_identity
@@ -219,3 +221,70 @@ def test_build_fare_identity_uses_provider_specific_keys(db):
 
     assert identity_a == identity_b
     assert identity_a != identity_c
+
+
+def test_wizzair_rate_limit_sets_provider_cooldown(monkeypatch, db):
+    user = get_user_model().objects.create_user(
+        username="wizz-user",
+        email="wizz@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="CGN",
+        destination="BLQ",
+        date_from=date(2026, 4, 13),
+        date_to=date(2026, 4, 24),
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="wizzair")
+
+    monkeypatch.setattr(
+        "apps.searches.services.get_active_providers",
+        lambda: [provider],
+    )
+    monkeypatch.setattr(
+        "apps.searches.services.load_adapter",
+        lambda provider: SimpleNamespace(
+            search=lambda query: (_ for _ in ()).throw(
+                WizzAirRateLimitError("blocked", request=Mock(), response=Mock(status_code=429))
+            )
+        ),
+    )
+
+    processed = SearchPollingService().run_subscription(subscription)
+    provider.refresh_from_db()
+
+    assert processed == 0
+    assert provider.consecutive_failures == 1
+    assert provider.last_error_message == "blocked"
+    assert provider.cooldown_until is not None
+    assert provider.cooldown_until > timezone.now()
+
+
+def test_provider_in_cooldown_is_skipped(monkeypatch, db):
+    user = get_user_model().objects.create_user(
+        username="cooldown-user",
+        email="cooldown@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="CGN",
+        destination="BLQ",
+        date_from=date(2026, 4, 13),
+        date_to=date(2026, 4, 24),
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="wizzair")
+    provider.cooldown_until = timezone.now() + timedelta(minutes=10)
+    provider.save(update_fields=["cooldown_until", "updated_at"])
+
+    load_mock = Mock()
+    monkeypatch.setattr("apps.searches.services.get_active_providers", lambda: [provider])
+    monkeypatch.setattr("apps.searches.services.load_adapter", load_mock)
+
+    processed = SearchPollingService().run_subscription(subscription)
+
+    assert processed == 0
+    load_mock.assert_not_called()

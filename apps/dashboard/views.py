@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.providers.services import get_provider_runtime_statuses
 from apps.searches.forms import SearchSubscriptionForm
 from apps.searches.models import SearchSubscription
 
@@ -30,6 +31,7 @@ def home(request):
         {
             "best_offers": best_offers,
             "form": form,
+            "provider_statuses": get_provider_runtime_statuses(),
             "subscriptions": subscriptions,
         },
     )
@@ -39,10 +41,15 @@ def home(request):
 def subscription_detail(request, pk: int):
     subscription = get_object_or_404(SearchSubscription, pk=pk, user=request.user)
     snapshots = subscription.snapshots.select_related("provider").order_by("-created_at")[:200]
+    provider_statuses = get_provider_runtime_statuses()
     return render(
         request,
         "dashboard/subscription_detail.html",
-        {"subscription": subscription, "snapshots": snapshots},
+        {
+            "provider_statuses": provider_statuses,
+            "subscription": subscription,
+            "snapshots": snapshots,
+        },
     )
 
 
