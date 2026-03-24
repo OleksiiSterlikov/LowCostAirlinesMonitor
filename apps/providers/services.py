@@ -8,7 +8,10 @@ def load_adapter(provider: AirlineProvider):
     module_path, class_name = provider.adapter_path.rsplit('.', 1)
     module = import_module(module_path)
     adapter_cls = getattr(module, class_name)
-    return adapter_cls()
+    try:
+        return adapter_cls(provider=provider)
+    except TypeError:
+        return adapter_cls()
 
 
 def get_active_providers() -> list[AirlineProvider]:
