@@ -62,7 +62,7 @@ def build_fare_identity(subscription: SearchSubscription, provider, fare: FareOp
 
 
 class SearchPollingService:
-    def run_subscription(self, subscription: SearchSubscription) -> int:
+    def run_subscription(self, subscription: SearchSubscription, *, force: bool = False) -> int:
         if subscription.status != "active":
             return 0
 
@@ -84,7 +84,7 @@ class SearchPollingService:
         )
         found = 0
         for provider in get_active_providers():
-            if provider_is_in_cooldown(provider):
+            if not force and provider_is_in_cooldown(provider):
                 logger.info(
                     "Skipping provider in cooldown subscription=%s provider=%s cooldown_until=%s",
                     subscription.pk,

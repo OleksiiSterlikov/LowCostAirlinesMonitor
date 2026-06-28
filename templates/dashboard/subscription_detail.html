@@ -64,6 +64,11 @@
         <div class="button-row">
             <a href="/" class="button-ghost">До кабінету</a>
             {% if subscription.status == 'active' %}
+                <form method="post" action="{% url 'dashboard:check_subscription_now' subscription.pk %}" class="button-inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="button-secondary">Перевірити зараз</button>
+                </form>
                 <a href="{% url 'dashboard:cancel_subscription' subscription.pk %}" class="button-secondary">Скасувати</a>
             {% endif %}
         </div>

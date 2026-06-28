@@ -22,8 +22,8 @@ def poll_active_searches() -> int:
     retry_jitter=True,
     max_retries=3,
 )
-def poll_subscription(subscription_id: int) -> int:
+def poll_subscription(subscription_id: int, force: bool = False) -> int:
     subscription = SearchSubscription.objects.filter(pk=subscription_id).select_related("user").first()
     if subscription is None:
         return 0
-    return SearchPollingService().run_subscription(subscription)
+    return SearchPollingService().run_subscription(subscription, force=force)

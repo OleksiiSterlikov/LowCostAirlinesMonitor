@@ -116,10 +116,11 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+PRICE_POLL_INTERVAL_SECONDS = env.float("PRICE_POLL_INTERVAL_SECONDS", default=3600.0)
 CELERY_BEAT_SCHEDULE = {
     "poll-active-searches-every-hour": {
         "task": "apps.searches.tasks.poll_active_searches",
-        "schedule": 3600.0,
+        "schedule": PRICE_POLL_INTERVAL_SECONDS,
     }
 }
 

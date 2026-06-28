@@ -611,6 +611,28 @@ th {
     flex-wrap: wrap;
 }
 
+.inline-action-form,
+.button-inline-form {
+    margin: 0;
+}
+
+.button-inline-form {
+    display: inline-flex;
+}
+
+.inline-action-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    color: inherit;
+}
+
+.inline-action-button:hover {
+    color: var(--accent);
+}
+
 .text-link {
     font-weight: 600;
 }

@@ -63,3 +63,6 @@ docker compose exec web pytest
 - реалізувати конкретні adapter-інтеграції
 - врахувати rate limits, anti-bot, CAPTCHA, legal/ToS обмеження
 - додати retry/backoff/proxy/observability
+
+Для персонального й рідкого моніторингу можна зменшити частоту автоперевірки через
+`PRICE_POLL_INTERVAL_SECONDS` в `.env` (наприклад, `21600` для перевірки раз на 6 годин).

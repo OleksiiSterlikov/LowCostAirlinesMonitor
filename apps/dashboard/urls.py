@@ -7,5 +7,6 @@ app_name = "dashboard"
 urlpatterns = [
     path("", views.home, name="home"),
     path("subscription/<int:pk>/", views.subscription_detail, name="subscription_detail"),
+    path("subscription/<int:pk>/check-now/", views.check_subscription_now, name="check_subscription_now"),
     path("subscription/<int:pk>/cancel/", views.cancel_subscription, name="cancel_subscription"),
 ]
