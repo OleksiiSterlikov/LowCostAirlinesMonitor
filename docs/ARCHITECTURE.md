@@ -242,8 +242,8 @@ The current skeleton has minimal observability. Production hardening should add:
 - alerting for repeated polling failures
 
 ## Known skeleton limitations
-- no migrations yet
-- no real provider integrations yet
-- no production retry/circuit-breaker policy yet
-- no hardened notification delivery yet
+- no production-grade metrics, dashboards, or alerting yet
+- no full retry/circuit-breaker strategy across all external integrations
+- Telegram delivery is still a stub and requires real API implementation
 - no formal audit trail yet for approval actions
+- no health/readiness endpoint or operational runbook coverage yet

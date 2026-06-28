@@ -12,7 +12,7 @@ class TelegramNotifier:
 
 class EmailNotifier:
     def send(self, email: str, subject: str, message: str) -> None:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
 
 
 class NotificationDispatcher:

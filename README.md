@@ -21,10 +21,19 @@
 - provider-based архітектура для Wizz Air, Ryanair та інших авіакомпаній
 
 ## Швидкий старт
+Linux/macOS:
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
+source .venv/bin/activate
 cp .env.example .env
+docker compose up --build
+```
+
+Windows (PowerShell):
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+copy .env.example .env
 docker compose up --build
 ```
 
