@@ -11,6 +11,7 @@ class AirlineProviderAdmin(admin.ModelAdmin):
         "is_active",
         "consecutive_failures",
         "cooldown_until",
+        "last_polled_at",
         "last_success_at",
         "updated_at",
     )

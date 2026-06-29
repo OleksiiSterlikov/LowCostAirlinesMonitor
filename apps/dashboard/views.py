@@ -76,7 +76,7 @@ def check_subscription_now(request, pk: int):
         messages.warning(request, "Ручна перевірка доступна лише для активних підписок.")
         return redirect(_resolve_redirect_target(request, subscription.pk))
 
-    poll_subscription.delay(subscription.pk)
+    poll_subscription.delay(subscription.pk, force=True)
     messages.success(request, "Перевірку додано в чергу. Онови сторінку через кілька секунд.")
     return redirect(_resolve_redirect_target(request, subscription.pk))
 

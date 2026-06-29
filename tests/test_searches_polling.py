@@ -299,3 +299,138 @@ def test_provider_in_cooldown_is_skipped(monkeypatch, db):
 
     assert processed == 0
     load_mock.assert_not_called()
+
+
+def test_force_check_does_not_extend_existing_provider_cooldown(monkeypatch, db):
+    date_from = timezone.localdate() + timedelta(days=7)
+    date_to = date_from + timedelta(days=11)
+
+    user = get_user_model().objects.create_user(
+        username="force-cooldown-user",
+        email="force-cooldown@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="CGN",
+        destination="BLQ",
+        date_from=date_from,
+        date_to=date_to,
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="wizzair")
+    existing_cooldown = timezone.now() + timedelta(minutes=20)
+    provider.cooldown_until = existing_cooldown
+    provider.consecutive_failures = 0
+    provider.last_error_message = ""
+    provider.save(
+        update_fields=[
+            "cooldown_until",
+            "consecutive_failures",
+            "last_error_message",
+            "updated_at",
+        ]
+    )
+
+    monkeypatch.setattr("apps.searches.services.get_active_providers", lambda: [provider])
+    monkeypatch.setattr(
+        "apps.searches.services.load_adapter",
+        lambda provider: SimpleNamespace(
+            search=lambda query: (_ for _ in ()).throw(
+                WizzAirRateLimitError("blocked", request=Mock(), response=Mock(status_code=429))
+            )
+        ),
+    )
+
+    processed = SearchPollingService().run_subscription(subscription, force=True)
+    provider.refresh_from_db()
+
+    assert processed == 0
+    assert provider.cooldown_until == existing_cooldown
+    assert provider.consecutive_failures == 1
+
+
+def test_wizzair_provider_level_throttling_skips_recent_poll(monkeypatch, db):
+    date_from = timezone.localdate() + timedelta(days=8)
+    date_to = date_from + timedelta(days=9)
+
+    user = get_user_model().objects.create_user(
+        username="wizz-throttle-user",
+        email="wizz-throttle@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="CGN",
+        destination="BLQ",
+        date_from=date_from,
+        date_to=date_to,
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="wizzair")
+    provider_config = provider.config_json or {}
+    provider_config["min_poll_interval_seconds"] = 600
+    provider.config_json = provider_config
+    provider.cooldown_until = None
+    provider.last_polled_at = timezone.now()
+    provider.save(
+        update_fields=[
+            "config_json",
+            "cooldown_until",
+            "last_polled_at",
+            "updated_at",
+        ]
+    )
+
+    load_mock = Mock()
+    monkeypatch.setattr("apps.searches.services.get_active_providers", lambda: [provider])
+    monkeypatch.setattr("apps.searches.services.load_adapter", load_mock)
+
+    processed = SearchPollingService().run_subscription(subscription)
+
+    assert processed == 0
+    load_mock.assert_not_called()
+
+
+def test_force_poll_bypasses_wizzair_provider_level_throttling(monkeypatch, db):
+    date_from = timezone.localdate() + timedelta(days=10)
+    date_to = date_from + timedelta(days=9)
+
+    user = get_user_model().objects.create_user(
+        username="wizz-force-throttle-user",
+        email="wizz-force-throttle@example.com",
+        password="StrongPass123!",
+    )
+    subscription = SearchSubscription.objects.create(
+        user=user,
+        origin="CGN",
+        destination="BLQ",
+        date_from=date_from,
+        date_to=date_to,
+        notify_via="email",
+    )
+    provider = AirlineProvider.objects.get(code="wizzair")
+    provider_config = provider.config_json or {}
+    provider_config["min_poll_interval_seconds"] = 600
+    provider.config_json = provider_config
+    provider.cooldown_until = None
+    provider.last_polled_at = timezone.now()
+    provider.save(
+        update_fields=[
+            "config_json",
+            "cooldown_until",
+            "last_polled_at",
+            "updated_at",
+        ]
+    )
+
+    search_mock = Mock(return_value=[])
+    load_mock = Mock(return_value=SimpleNamespace(search=search_mock))
+    monkeypatch.setattr("apps.searches.services.get_active_providers", lambda: [provider])
+    monkeypatch.setattr("apps.searches.services.load_adapter", load_mock)
+
+    processed = SearchPollingService().run_subscription(subscription, force=True)
+
+    assert processed == 0
+    load_mock.assert_called_once_with(provider)
+    search_mock.assert_called_once()

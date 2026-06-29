@@ -168,6 +168,33 @@ def test_wizzair_adapter_supports_manual_cookie_header(db):
     assert adapter.client.headers["Cookie"] == "ak_bmsc=test-cookie"
 
 
+def test_wizzair_adapter_reads_persistent_playwright_state_config(db):
+    provider = AirlineProvider.objects.create(
+        code="wizzair-persistent-state",
+        name="Wizz Air Persistent State",
+        adapter_path="apps.providers.adapters.wizzair.WizzAirAdapter",
+        config_json={
+            "bootstrap_enabled": False,
+            "playwright_persistent_context_enabled": True,
+            "playwright_user_data_dir": "/tmp/test-wizz-profile",
+            "playwright_storage_state_path": "/tmp/test-wizz-state.json",
+        },
+    )
+    client = Mock()
+    client.headers = {}
+    client.post.return_value = Mock(
+        status_code=200,
+        raise_for_status=Mock(),
+        json=Mock(return_value={"outboundFlights": []}),
+    )
+
+    adapter = WizzAirAdapter(provider=provider, client=client)
+
+    assert adapter.playwright_persistent_context_enabled is True
+    assert adapter.playwright_user_data_dir == "/tmp/test-wizz-profile"
+    assert adapter.playwright_storage_state_path == "/tmp/test-wizz-state.json"
+
+
 def test_wizzair_adapter_uses_playwright_fallback_on_rate_limit(monkeypatch, db):
     provider = AirlineProvider.objects.create(
         code="wizzair-fallback",

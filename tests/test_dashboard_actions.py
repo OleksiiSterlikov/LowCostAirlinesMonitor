@@ -36,7 +36,7 @@ def test_check_subscription_now_queues_polling_for_active_subscription(monkeypat
     )
 
     assert response.status_code == 200
-    delay_mock.assert_called_once_with(subscription.pk)
+    delay_mock.assert_called_once_with(subscription.pk, force=True)
 
     messages = [message.message for message in get_messages(response.wsgi_request)]
     assert any("додано в чергу" in message.lower() for message in messages)

@@ -11,6 +11,7 @@ from apps.notifications.tasks import send_price_change_notification
 from apps.providers.adapters.base import FareOption, SearchQuery
 from apps.providers.adapters.wizzair import WizzAirRateLimitError
 from apps.providers.services import (
+    claim_provider_poll_slot,
     get_active_providers,
     load_adapter,
     mark_provider_failure,
@@ -92,6 +93,17 @@ class SearchPollingService:
                     provider.cooldown_until,
                 )
                 continue
+
+            slot_acquired, retry_after_seconds = claim_provider_poll_slot(provider, force=force)
+            if not slot_acquired:
+                logger.info(
+                    "Skipping provider by min poll interval subscription=%s provider=%s retry_after_seconds=%s",
+                    subscription.pk,
+                    provider.code,
+                    retry_after_seconds,
+                )
+                continue
+
             try:
                 adapter = load_adapter(provider)
                 fares = adapter.search(query)

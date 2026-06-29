@@ -8,10 +8,13 @@ def test_sync_default_providers_is_idempotent_with_seeded_records(db):
     created, updated = sync_default_providers()
 
     provider_codes = set(AirlineProvider.objects.values_list("code", flat=True))
+    wizzair_provider = AirlineProvider.objects.get(code="wizzair")
 
     assert created == 0
     assert updated == 2
     assert provider_codes == {"ryanair", "wizzair"}
+    assert wizzair_provider.config_json["min_poll_interval_seconds"] == 600
+    assert wizzair_provider.config_json["playwright_persistent_context_enabled"] is True
 
 
 def test_sync_default_providers_updates_existing_records(db):

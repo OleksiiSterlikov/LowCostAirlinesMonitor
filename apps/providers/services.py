@@ -2,6 +2,7 @@ import logging
 from importlib import import_module
 from datetime import timedelta
 
+from django.db.models import Q
 from django.utils import timezone
 
 from .bootstrap import DEFAULT_PROVIDER_DEFINITIONS
@@ -29,6 +30,47 @@ def provider_is_in_cooldown(provider: AirlineProvider) -> bool:
     return bool(provider.cooldown_until and provider.cooldown_until > timezone.now())
 
 
+def claim_provider_poll_slot(
+    provider: AirlineProvider,
+    *,
+    force: bool = False,
+) -> tuple[bool, int | None]:
+    now = timezone.now()
+
+    if force:
+        provider.last_polled_at = now
+        provider.save(update_fields=["last_polled_at", "updated_at"])
+        return True, None
+
+    config = provider.config_json or {}
+    min_interval_seconds = int(config.get("min_poll_interval_seconds", 0))
+
+    if min_interval_seconds <= 0:
+        provider.last_polled_at = now
+        provider.save(update_fields=["last_polled_at", "updated_at"])
+        return True, None
+
+    threshold = now - timedelta(seconds=min_interval_seconds)
+    updated_rows = (
+        AirlineProvider.objects
+        .filter(pk=provider.pk)
+        .filter(Q(last_polled_at__isnull=True) | Q(last_polled_at__lte=threshold))
+        .update(last_polled_at=now, updated_at=now)
+    )
+
+    if updated_rows:
+        provider.last_polled_at = now
+        return True, None
+
+    provider.refresh_from_db(fields=["last_polled_at"])
+    if provider.last_polled_at is None:
+        return False, min_interval_seconds
+
+    next_allowed_at = provider.last_polled_at + timedelta(seconds=min_interval_seconds)
+    retry_after_seconds = max(1, int((next_allowed_at - now).total_seconds()))
+    return False, retry_after_seconds
+
+
 def mark_provider_success(provider: AirlineProvider) -> None:
     provider.last_success_at = timezone.now()
     provider.last_error_message = ""
@@ -51,11 +93,15 @@ def mark_provider_failure(
     *,
     cooldown_minutes: int | None = None,
 ) -> None:
-    provider.last_failure_at = timezone.now()
+    now = timezone.now()
+    provider.last_failure_at = now
     provider.last_error_message = error_message[:500]
     provider.consecutive_failures += 1
     if cooldown_minutes:
-        provider.cooldown_until = timezone.now() + timedelta(minutes=cooldown_minutes)
+        # Keep existing cooldown window to avoid creating a sliding lockout when
+        # repeated manual checks fail while the provider is already throttled.
+        if not provider.cooldown_until or provider.cooldown_until <= now:
+            provider.cooldown_until = now + timedelta(minutes=cooldown_minutes)
     provider.save(
         update_fields=[
             "last_failure_at",
