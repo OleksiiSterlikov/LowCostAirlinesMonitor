@@ -34,6 +34,7 @@
             <thead>
                 <tr>
                     <th>Провайдер</th>
+                    <th>Остання перевірка</th>
                     <th>Останній успіх</th>
                     <th>Остання помилка</th>
                     <th>Cooldown до</th>
@@ -44,6 +45,7 @@
                 {% for provider in provider_statuses %}
                     <tr>
                         <td>{{ provider.name }}</td>
+                        <td>{{ provider.last_polled_at|default:"-" }}</td>
                         <td>{{ provider.last_success_at|default:"-" }}</td>
                         <td>{{ provider.last_error_message|default:"-" }}</td>
                         <td>{{ provider.cooldown_until|default:"-" }}</td>

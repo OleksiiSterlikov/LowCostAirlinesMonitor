@@ -27,7 +27,17 @@ def get_active_providers() -> list[AirlineProvider]:
 
 
 def provider_is_in_cooldown(provider: AirlineProvider) -> bool:
-    return bool(provider.cooldown_until and provider.cooldown_until > timezone.now())
+    if not provider.cooldown_until:
+        return False
+
+    now = timezone.now()
+    if provider.cooldown_until > now:
+        return True
+
+    # Cooldown expired: normalize runtime state so UI does not show stale values.
+    provider.cooldown_until = None
+    provider.save(update_fields=["cooldown_until", "updated_at"])
+    return False
 
 
 def claim_provider_poll_slot(
@@ -114,7 +124,24 @@ def mark_provider_failure(
 
 
 def get_provider_runtime_statuses() -> list[AirlineProvider]:
-    return list(AirlineProvider.objects.filter(is_active=True).order_by("name"))
+    providers = list(AirlineProvider.objects.filter(is_active=True).order_by("name"))
+    now = timezone.now()
+    expired_provider_ids = [
+        provider.pk
+        for provider in providers
+        if provider.cooldown_until and provider.cooldown_until <= now
+    ]
+
+    if expired_provider_ids:
+        AirlineProvider.objects.filter(pk__in=expired_provider_ids).update(
+            cooldown_until=None,
+            updated_at=now,
+        )
+        for provider in providers:
+            if provider.pk in expired_provider_ids:
+                provider.cooldown_until = None
+
+    return providers
 
 
 def sync_default_providers() -> tuple[int, int]:

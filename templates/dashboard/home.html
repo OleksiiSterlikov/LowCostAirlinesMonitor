@@ -130,6 +130,8 @@
                             <strong>{{ provider.name }}</strong>
                             {% if provider.cooldown_until %}
                                 <span>Cooldown до {{ provider.cooldown_until|date:"d.m H:i" }}</span>
+                            {% elif provider.last_polled_at %}
+                                <span>Остання перевірка {{ provider.last_polled_at|date:"d.m H:i" }}</span>
                             {% elif provider.last_error_message %}
                                 <span>{{ provider.last_error_message }}</span>
                             {% elif provider.last_success_at %}
